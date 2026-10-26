@@ -1,44 +1,47 @@
 # Design references — Systems in Motion
 
-The approved direction combines a mechanical identity, an editorial project index, and a personal explorable workspace. This document identifies the source of each design decision. References inform principles; all identity geometry, layouts, shaders, and application code in this project are original implementations.
+## The two primary benchmarks
 
-## Verified reference set
+The owner explicitly selected **Lusion.co** and **Lando Norris** as the craft standard. They govern this implementation's art direction, interaction rhythm, and final review.
 
-| Reference | Recognition verified on Awwwards | Primary evidence |
+1. **[Lusion.co](https://lusion.co/)** — current studio website retrieved on 2026-10-26. Its own description connects 3D storytelling, interaction, featured work, approach, and an experimental practice. Its current page also exposes play/mute controls. The historical **Lusion v3** won Awwwards Site of the Year 2023 and a Developer Award; this is an award record for v3, not a claim that the current site is the exact 2023 build.
+2. **[Lando Norris](https://www.itsoffbrand.com/our-work/lando-norris)** — OFF+BRAND.'s primary creator case study. It describes personality-driven motion, sharp transitions, responsive interactions, cinematic scrolling, bold typography, and 3D/WebGL. Awwwards lists the site as Site of the Year 2025 with a Developer Award.
+
+Award evidence: [Awwwards Sites of the Year](https://www.awwwards.com/websites/sites_of_the_year/). Lusion's specific scroll reference: [documented v3 element](https://www.awwwards.com/inspiration/scroll-animation-3).
+
+## Section and style map
+
+These are interpretations of the references, with original geometry and application code. The map does not imply an identical reproduction of their artwork or technology.
+
+| Area | Main reference | Decision in this portfolio |
 | --- | --- | --- |
-| Lusion v3 — Lusion | Site of the Year 2023; Developer Award | [Winner entry](https://www.awwwards.com/sites/lusion-v3), [documented scroll element](https://www.awwwards.com/inspiration/scroll-animation-3) |
-| Igloo Inc — abeto | Site of the Year 2024; Developer Award | [Annual winners index](https://www.awwwards.com/websites/sites_of_the_year/), [creator case study](https://www.awwwards.com/igloo-inc-case-study.html) |
-| Siena Film Foundation — Niccolò Miranda and collaborators | Site of the Month, March 2025; Developer Award | [Monthly winners index](https://www.awwwards.com/websites/sites_of_the_month/), [creator case study](https://www.awwwards.com/siena-film-foundation-case-study.html) |
-| Bruno Simon Portfolio — Bruno Simon | Site of the Year 2019; Developer Award | [Annual winners index](https://www.awwwards.com/websites/sites_of_the_year/), [2019 award article](https://www.awwwards.com/bruno-simon-portfolio-wins-site-of-the-month-november.html) |
-| Bruno's Portfolio — Bruno Simon | Site of the Month, January 2026; Developer Award | [Monthly winners index](https://www.awwwards.com/websites/sites_of_the_month/), [creator case study](https://www.awwwards.com/brunos-portfolio-case-study.html) |
-
-## Area-by-area decisions
-
-| Area | Reference and studied principle | Application to Asyraf |
-| --- | --- | --- |
-| Opening composition | Lusion v3: an interactive introduction and scroll-led presentation as one identity. | A dominant name, quiet technical metadata, and a physical A assembly. The typography, silver/cobalt palette, and monogram are this project's own direction. |
-| Typography | Siena: poster typography and a cohesive graphic language rooted in its subject. | Closely tracked Nimbus Sans, editorial scale changes, a restrained italic counterpoint, and mono annotations rooted in software tooling. We use locally licensed fonts rather than reproducing the reference's type system. |
-| Hero 3D | Igloo: a branded object anchors the experience; transitions maintain its world. | Three beveled structural members, actual fasteners, and an orbital connector express a system whose parts agree. Disassembly exposes the construction. The A, metal lighting, and orbit are original. |
-| Selected work and media frames | Siena: poster and footage modes give the same work different rhythms. | Four asymmetric project frames with a switch between an editorial composition and a compact index. The slots are intentionally left for the owner's future images/video. |
-| Engineering approach | Siena's subject-led graphic consistency, applied as our interpretation. | Scale, spacing, numbered rules, and explicit engineering stories replace generic skill cards. Content comes from Asyraf's repositories. |
-| Explorable workspace | Bruno's portfolios: learn about the author by exploring a personal world. | An orbitable desk with an Arch terminal, tools, and system modules. Click/tap or use keyboard controls to inspect three notes. The scene is a conceptual workspace, not a claim about the exact physical desk. |
-| Hover | Siena's documented lettering rollover. | Clipped, staggered character rollovers, directional arrows, a quiet pointer label, and frame tilt. Motion remains subordinate to readable project names. |
-| Page transitions | Siena's documented stripe transition and consistent motion direction. Igloo's scene continuity is a secondary reference. | A short, five-strip cobalt curtain carries the project index into a case-study route; a coordinated reveal introduces the new heading. Browser back/forward restores the corresponding view. |
-| Scroll and section entry | Lusion's documented scroll element: coordinated progression rather than unrelated effects. | Native scrolling drives restrained object orientation and section-specific entrances. No wheel interception or forced scroll duration. |
-| Contact and footer | Siena's contact lettering is the typography reference. | A large typographic invitation, rolling text, an expressive directional arrow, and a deliberately quiet technical footer. |
-| Background sound | Bruno's 2026 case study documents world-level sound design. | An original, optional generative ambient score supports this project's atmosphere. A user can also choose a local audio file. Audio begins only after an explicit play gesture. |
-| Mobile and reduced motion | Product constraints of this implementation. | Touch-friendly controls, preserved vertical scrolling, readable static content, motion controls, and a software 3D fallback when a GPU context is unavailable. These are our engineering choices. |
+| Opening composition | Lando's strong typographic personality; Lusion's interactive introduction | A dominant name, quiet metadata, and a structural A assembly create a personal opening. |
+| Typography | Lando's confident hierarchy | Tight Nimbus Sans, large scale changes, mono annotations, and a restrained italic counterpoint. The licensed font choices and typography system are ours. |
+| Hero 3D | Lusion's connection between a subject and its 3D experience | Three beveled members, fasteners, and a cobalt orbit express an engineered system. Disassembly reveals its construction. The A and its materials are original. |
+| Selected work | Lusion's featured-work progression; Lando's immersive galleries | Four asymmetric frames, a compact index, category filtering, and four owner-fillable media areas. |
+| Approach section | Lando's personality-led storytelling | Concrete engineering principles and verified repository stories take the place of generic capability cards. |
+| Personal workspace | Lusion's interactive world-building | An orbitable conceptual Arch desk connects the terminal, tools, and mindset. It represents the user's software setup, not a verified exact physical desk. |
+| Hover | Lando's responsive, immediate interaction rhythm | Rolling letters, directional arrows, subtle frame response, and an exploration pointer. The rollover implementation is original. |
+| Project transitions | Lusion's continuity and Lando's sharp momentum | A five-strip cobalt reveal carries the same identity into a full-page project route. Focus and browser history travel with the content. |
+| Scroll and section entry | Lusion's documented scroll presentation; Lando's cinematic progression | Native scrolling, restrained object orientation, and section-specific entrances. No wheel interception. |
+| Contact and footer | Lando's typography and clear personal voice | A large invitation, rolling type, an expressive arrow, and a quiet technical footer. |
+| Background audio | Lusion's integrated media controls, with an original audio design | An optional generative ambient score, volume, and local-track selection. Playback starts only after a play gesture. |
+| Mobile and motion preferences | Engineering choices made for this implementation | Preserved vertical touch scrolling, keyboard controls, motion pause, static content, and a depth-buffered software 3D path when WebGL is unavailable. |
 
 ## Motion specification
 
-- Microinteraction: 160–260 ms, with a brief character stagger.
-- Section reveal: 650–850 ms, eased, with minimal travel.
-- Project transition: about 800 ms, with overlapping strip and content motion.
-- 3D orbit: damped input; automatic movement stops when offscreen or motion is disabled.
-- Reduced motion: immediate route changes and static compositions; manual inspection remains available.
+- Microinteraction: 160–440 ms, with a short character stagger.
+- Section entrance: 650–850 ms, small travel and restrained blur.
+- Project route: approximately 900 ms; overlapping strips and coordinated content reveal.
+- Workspace: damped orbit and inspection changes; render on demand when idle.
+- Reduced motion: immediate route state, readable static compositions, and manual inspection.
 
-## Reference limits
+## Secondary studies
 
-The case-study descriptions and award indexes above were retrieved on 2026-10-26. Several Awwwards detail pages timed out during direct text retrieval; their indexed primary-source excerpts were available. This is not a claim to have reproduced every animation from those sites. The mappings above distinguish documented features from our interpretations.
+Earlier exploratory studies included [Igloo Inc](https://www.awwwards.com/igloo-inc-case-study.html), [Siena Film Foundation](https://www.awwwards.com/siena-film-foundation-case-study.html), and [Bruno Simon](https://www.awwwards.com/brunos-portfolio-case-study.html). Siena documents stripe transitions and lettering rollover; Bruno documents author discovery through a personal world. These informed the exploration. They are not the owner's final primary benchmarks.
 
-An award is a juried outcome. These references set the craft target; this project does not claim to have won or been nominated for an award.
+## Verification and limits
+
+The reference descriptions and award evidence were retrieved on 2026-10-26. Some Awwwards detail pages timed out, so available indexed primary-source excerpts were used alongside successfully retrieved pages. The OFF+BRAND. case study returned readable source content through search, while its browser view remained blank. No claim is made that every live animation was visually inspected.
+
+All project-media slots are intentionally unfilled. No award, certification, studio affiliation, or measured performance result is claimed for this portfolio.

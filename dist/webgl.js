@@ -103,7 +103,7 @@ class Renderer {
     if(!gl.getProgramParameter(this.program,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(this.program));
     this.attributes=['aPosition','aNormal','aUV'].map(x=>gl.getAttribLocation(this.program,x));
     this.uniforms=Object.fromEntries(['uModel','uVP','uEye','uColor','uMetal','uSelected','uTime','uMode','uTexture'].map(n=>[n,gl.getUniformLocation(this.program,n)]));
-    this.cache=new Map();this.textures=[];this.vp=identity();this.ratio=Math.min(window.devicePixelRatio||1,1.75);
+    this.cache=new Map();this.textures=[];this.defaultTexture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,this.defaultTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);this.textures.push(this.defaultTexture);this.vp=identity();this.ratio=Math.min(window.devicePixelRatio||1,1.75);
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
     canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();this.lost=true;canvas.parentElement.classList.remove('has-webgl');canvas.parentElement.dataset.renderState='fallback';});
   }
@@ -128,7 +128,7 @@ class Renderer {
     const sizes=[3,3,2],offsets=[0,12,24];
     this.attributes.forEach((location,i)=>{if(location>=0){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,sizes[i],gl.FLOAT,false,32,offsets[i]);}});
     gl.uniformMatrix4fv(u.uModel,false,matrix);gl.uniform3fv(u.uColor,color);gl.uniform1f(u.uMetal,metal);gl.uniform1f(u.uSelected,selected);gl.uniform1i(u.uMode,mode);
-    if(texture){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(u.uTexture,0);}
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture||this.defaultTexture);gl.uniform1i(u.uTexture,0);
     gl.drawArrays(gl.TRIANGLES,0,geometry.count);
   }
   project(p){const m=this.vp,q=[0,0,0,0];for(let i=0;i<4;i++)q[i]=m[i]*p[0]+m[4+i]*p[1]+m[8+i]*p[2]+m[12+i];return [(q[0]/q[3]*.5+.5)*this.canvas.clientWidth,(-q[1]/q[3]*.5+.5)*this.canvas.clientHeight];}
@@ -202,30 +202,30 @@ class SoftwareRenderer {
 
 class Scene {
   constructor(canvas,draw,{continuous=true}={}) {
-    this.canvas=canvas;try{this.renderer=new Renderer(canvas);}catch(error){if(error.message!=='WebGL unavailable')throw error;this.renderer=new SoftwareRenderer(canvas);}this.draw=draw;this.continuous=continuous;this.animating=false;this.visible=false;this.paused=matchMedia('(prefers-reduced-motion: reduce)').matches;this.frame=0;this.last=0;this.time=0;this.dragging=false;this.destroyed=false;
+    this.canvas=canvas;try{this.renderer=new Renderer(canvas);}catch(error){if(error.message!=='WebGL unavailable')throw error;this.renderer=new SoftwareRenderer(canvas);}this.draw=draw;this.continuous=continuous;this.animating=false;this.visible=canvas.getBoundingClientRect().bottom>0&&canvas.getBoundingClientRect().top<innerHeight;this.paused=matchMedia('(prefers-reduced-motion: reduce)').matches;try{const preference=localStorage.getItem('asyraf-motion');if(preference!==null)this.paused=preference==='off';}catch{}this.frame=0;this.last=0;this.time=0;this.dragging=false;this.destroyed=false;
     this.observer=new IntersectionObserver(entries=>{this.visible=entries[0].isIntersecting;this.refresh();},{rootMargin:'80px'});this.observer.observe(canvas);
     this.resize=new ResizeObserver(()=>this.renderOnce());this.resize.observe(canvas);
     this.onVisibility=()=>this.refresh();document.addEventListener('visibilitychange',this.onVisibility);
     this.onLost=()=>this.stop();canvas.addEventListener('webglcontextlost',this.onLost);
     canvas.addEventListener('webglcontextrestored',()=>{this.renderer=new Renderer(canvas);canvas.parentElement.classList.add('has-webgl');canvas.parentElement.dataset.renderState='ready';this.refresh();});
     canvas.parentElement.dataset.renderState='ready';canvas.parentElement.dataset.renderBackend=this.renderer.backend;
-    this.renderOnce();canvas.parentElement.classList.add('has-webgl');
+    if(this.visible){this.renderOnce();canvas.parentElement.classList.add('has-webgl');}
   }
-  renderOnce(){if(this.destroyed||this.renderer.lost)return;this.draw(this.renderer,0,this.time);this.renderer.end?.();}
-  refresh(){this.stop();if(!this.paused&&this.visible&&!document.hidden&&!this.renderer.lost&&(this.continuous||this.animating)){this.last=performance.now();this.frame=requestAnimationFrame(t=>this.tick(t));}else this.renderOnce();}
-  tick(t){if(this.destroyed)return;if(this.renderer.backend==='canvas2d'&&t-this.last<40){this.frame=requestAnimationFrame(n=>this.tick(n));return;}const dt=Math.min((t-this.last)/1000,.045);this.last=t;this.time+=dt;this.draw(this.renderer,dt,this.time);this.renderer.end?.();if(this.continuous||this.animating)this.frame=requestAnimationFrame(n=>this.tick(n));else this.frame=0;}
+  renderOnce(){if(this.destroyed||this.renderer.lost||!this.visible)return;this.draw(this.renderer,0,this.time);this.renderer.end?.();this.canvas.parentElement.classList.add('has-webgl');}
+  refresh(){this.stop();if(!this.visible)return;if(!this.paused&&this.visible&&!document.hidden&&!this.renderer.lost&&(this.continuous||this.animating)){this.last=performance.now();this.frame=requestAnimationFrame(t=>this.tick(t));}else this.renderOnce();}
+  tick(t){if(this.destroyed)return;if(this.renderer.backend==='canvas2d'&&t-this.last<40){this.frame=requestAnimationFrame(n=>this.tick(n));return;}const dt=Math.min((t-this.last)/1000,.045);this.last=t;this.time+=dt;this.draw(this.renderer,dt,this.time);this.renderer.end?.();this.canvas.parentElement.classList.add('has-webgl');if(this.continuous||this.animating)this.frame=requestAnimationFrame(n=>this.tick(n));else this.frame=0;}
   stop(){cancelAnimationFrame(this.frame);this.frame=0;}
   motion(paused){this.paused=paused;this.refresh();}
   dispose(){this.destroyed=true;this.stop();this.observer.disconnect();this.resize.disconnect();document.removeEventListener('visibilitychange',this.onVisibility);this.canvas.removeEventListener('webglcontextlost',this.onLost);this.renderer.dispose();}
 }
 
-function wireOrbit(scene,state,{onTap,onSpace}={}) {
+function wireOrbit(scene,state,{onTap,onSpace,pitchMin=-.8,pitchMax=1.12}={}) {
   const c=scene.canvas;let start=null,moved=false;
   c.addEventListener('pointerdown',e=>{if(e.button!==0)return;start=[e.clientX,e.clientY];moved=false;scene.dragging=true;c.setPointerCapture(e.pointerId);});
-  c.addEventListener('pointermove',e=>{if(!start)return;const dx=e.clientX-start[0],dy=e.clientY-start[1];if(Math.abs(dx)+Math.abs(dy)>3)moved=true;state.yaw+=dx*.006;state.pitch=clamp(state.pitch+dy*.004,-.8,1.12);start=[e.clientX,e.clientY];if(scene.paused||!scene.continuous)scene.renderOnce();});
+  c.addEventListener('pointermove',e=>{if(!start)return;const dx=e.clientX-start[0],dy=e.clientY-start[1];if(Math.abs(dx)+Math.abs(dy)>3)moved=true;state.yaw+=dx*.006;state.pitch=clamp(state.pitch+dy*.004,pitchMin,pitchMax);start=[e.clientX,e.clientY];if(scene.paused||!scene.continuous)scene.renderOnce();});
   const end=e=>{if(!start)return;start=null;scene.dragging=false;if(!moved&&e.type==='pointerup'&&onTap){const r=c.getBoundingClientRect();onTap(e.clientX-r.left,e.clientY-r.top);}if(c.hasPointerCapture(e.pointerId))c.releasePointerCapture(e.pointerId);};
   c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
-  c.addEventListener('keydown',e=>{const keys=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home',' '];if(!keys.includes(e.key))return;e.preventDefault();if(e.key==='ArrowLeft')state.yaw-=.14;if(e.key==='ArrowRight')state.yaw+=.14;if(e.key==='ArrowUp')state.pitch=clamp(state.pitch-.1,-.8,1.12);if(e.key==='ArrowDown')state.pitch=clamp(state.pitch+.1,-.8,1.12);if(e.key==='Home'){state.yaw=state.homeYaw;state.pitch=state.homePitch;}if(e.key===' '&&onSpace){onSpace();if(scene.paused)scene.renderOnce();return;}scene.renderOnce();});
+  c.addEventListener('keydown',e=>{const keys=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home',' '];if(!keys.includes(e.key))return;e.preventDefault();if(e.key==='ArrowLeft')state.yaw-=.14;if(e.key==='ArrowRight')state.yaw+=.14;if(e.key==='ArrowUp')state.pitch=clamp(state.pitch-.1,pitchMin,pitchMax);if(e.key==='ArrowDown')state.pitch=clamp(state.pitch+.1,pitchMin,pitchMax);if(e.key==='Home'){state.yaw=state.homeYaw;state.pitch=state.homePitch;}if(e.key===' '&&onSpace){onSpace();if(scene.paused)scene.renderOnce();return;}scene.renderOnce();});
 }
 
 export function createHero(canvas) {
@@ -238,7 +238,7 @@ export function createHero(canvas) {
     const e=state.explode,chrome=[.82,.85,.91],blue=[.11,.16,.93];
     const drawPart=(geo,pos,rot,color,metal=.9)=>r.draw(geo,multiply(global,transform(pos,rot)),color,metal);
     drawPart(r.box(.48,2.78,.62,.12),[-.51-e*.55,.03+e*.18,e*.3],[0,0,-.39-e*.18],chrome);
-    drawPart(r.box(.48,2.78,.62,.12),[.51+e*.55,.03+e*.18,-e*.2],[0,0,.39+e*.18],chrome);
+    drawPart(r.box(.48,2.78,.62,.12),[.51+e*.55,.03+e*.18,.006-e*.2],[0,0,.39+e*.18],chrome);
     drawPart(r.box(1.29,.38,.64,.09),[0,-.35-e*.55,e*.7],[e*.16,0,0],chrome);
     drawPart(r.box(.16,.23,.015,.015),[0,-.35-e*.55,.329+e*.7],[0,0,0],blue,.45);
     for(const sign of [-1,1]){
@@ -272,7 +272,7 @@ export function createWorkspace(canvas,onInspect) {
   const state={yaw:.38,pitch:.52,homeYaw:.38,homePitch:.52,targetYaw:.38,targetPitch:.52,selected:'terminal',transition:0};let scene;
   const draw=(r,dt,t)=>{
     if(state.transition>0&&!scene?.dragging){const q=dt?1-Math.exp(-dt*4):1;state.yaw=mix(state.yaw,state.targetYaw,q);state.pitch=mix(state.pitch,state.targetPitch,q);if(Math.abs(state.yaw-state.targetYaw)+Math.abs(state.pitch-state.targetPitch)<.002){state.transition=0;if(scene)scene.animating=false;}}
-    const pitch=clamp(state.pitch,.18,1.1),dist=9.1,eye=[Math.sin(state.yaw)*Math.cos(pitch)*dist,Math.sin(pitch)*dist,Math.cos(state.yaw)*Math.cos(pitch)*dist];
+    const pitch=clamp(state.pitch,.18,1.1),aspect=canvas.clientWidth/Math.max(1,canvas.clientHeight),dist=9.1*Math.max(1,1.2/aspect),eye=[Math.sin(state.yaw)*Math.cos(pitch)*dist,Math.sin(pitch)*dist,Math.cos(state.yaw)*Math.cos(pitch)*dist];
     if(!r.begin(eye,[0,-.15,0],.66))return;
     r.gl.depthMask(false);r.draw(r.plane(9,6),transform([0,-1.94,0],[-Math.PI/2,0,0]),[.2,.25,.4],0,0,3);r.gl.depthMask(true);
     const box=(dims,p,color,rad=.06,rot=[0,0,0],metal=.0,selected=0)=>r.draw(r.box(...dims,rad),transform(p,rot),color,metal,selected);
@@ -311,7 +311,7 @@ export function createWorkspace(canvas,onInspect) {
   };
   scene=new Scene(canvas,draw,{continuous:false});
   const inspect=key=>{state.selected=key;const targets={terminal:[.38,.52],tools:[-.15,.92],mindset:[-.68,.58]};[state.targetYaw,state.targetPitch]=targets[key]||targets.terminal;state.transition=1;if(scene.paused){state.yaw=state.targetYaw;state.pitch=state.targetPitch;state.transition=0;scene.renderOnce();}else{scene.animating=true;scene.refresh();}};
-  wireOrbit(scene,state,{onTap:(x,y)=>{const targets=[['terminal',[-.54,.6,-.5],95],['tools',[-.55,-.8,.9],85],['mindset',[2.1,-.3,-.2],75]];let best=null,score=Infinity;for(const [key,point,radius]of targets){const p=scene.renderer.project(point),d=Math.hypot(x-p[0],y-p[1])/radius;if(d<1&&d<score){score=d;best=key;}}if(best)onInspect(best);}});
+  wireOrbit(scene,state,{pitchMin:.18,pitchMax:1.1,onTap:(x,y)=>{const targets=[['terminal',[-.54,.6,-.5],95],['tools',[-.55,-.8,.9],85],['mindset',[2.1,-.3,-.2],75]];let best=null,score=Infinity;for(const [key,point,radius]of targets){const p=scene.renderer.project(point),d=Math.hypot(x-p[0],y-p[1])/radius;if(d<1&&d<score){score=d;best=key;}}if(best)onInspect(best);}});
   canvas.addEventListener('pointerdown',()=>{state.transition=0;});
   canvas.addEventListener('keydown',e=>{state.transition=0;if(['1','2','3'].includes(e.key)){e.preventDefault();onInspect(['terminal','tools','mindset'][Number(e.key)-1]);}});
   return {motion:v=>scene.motion(v),inspect,reset:()=>inspect('terminal'),dispose:()=>scene.dispose()};

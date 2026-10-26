@@ -1,0 +1,14 @@
+name: Verify static experience
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript, media contracts, and asset integrity
+        run: node scripts/check.mjs
