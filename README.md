@@ -16,7 +16,10 @@ Open `http://localhost:8080`. Use an HTTP server rather than opening `index.html
 
 - `dist/index.html`: semantic content and accessible static baseline.
 - `dist/style.css`: responsive editorial composition and interaction states.
-- `dist/assets/`: locally bundled fonts, original vector artwork, and optimized project screenshots.
+- `dist/assets/`: locally bundled fonts and original vector artwork. Project media is intentionally left for the owner to fill.
+- `dist/webgl.js`: original geometry, GPU lighting, and a depth-buffered software 3D fallback.
+- `dist/scene.js`: scene lifecycle, orbit controls, disassembly, and workspace inspection.
+- `DESIGN_REFERENCES.md`: the reference and adaptation for each section, style, and interaction.
 - `.openai/hosting.json`: deployment configuration for the corresponding Site.
 
 The experience is designed to work without third-party CDN requests. WebGL and motion progressively enhance the readable HTML.
@@ -25,7 +28,7 @@ The experience is designed to work without third-party CDN requests. WebGL and m
 
 Project descriptions and engineering approach are based on the public READMEs in [Asyraf2003/Asyraf2003](https://github.com/Asyraf2003/Asyraf2003), [schoolai](https://github.com/Asyraf2003/schoolai), [GlassPos](https://github.com/Asyraf2003/GlassPos), [meawpos-api](https://github.com/Asyraf2003/meawpos-api), [miawpos-ui](https://github.com/Asyraf2003/miawpos-ui), and [dotfiles](https://github.com/Asyraf2003/dotfiles).
 
-SchoolAI and GlassPos images are optimized copies of their repository screenshots. MiawPOS is presented as in development; its poster is an original editorial illustration, not a product screenshot. The fourth project is this portfolio.
+All project-media areas are intentional styled slots, per the owner's direction. MiawPOS is presented as in development. The fourth project is this portfolio.
 
 Nimbus Sans and Nimbus Mono PS are from URW Base35; their license and font exception are included in `THIRD_PARTY_FONTS.txt`.
 
