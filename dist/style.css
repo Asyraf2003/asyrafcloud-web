@@ -9,3 +9,21 @@
 .enhanced .hero-stage{position:absolute;top:var(--stage-top,250px);bottom:var(--stage-bottom,52px);left:var(--stage-inset,3.2vw);right:var(--stage-inset,3.2vw)}.enhanced .hero-baseline{margin-top:auto}.menu-bottom #menu-close{position:absolute;top:30px;right:5vw;font-size:10px;border:1px solid #d7ff3070;border-radius:4px;padding:13px 18px}.contact-fan{transition:transform .8s var(--ease)}.glasspos .detail-hero,.glasspos .detail-secondary{background:#35402e}.portfolio .detail-hero,.portfolio .detail-secondary{background:#ffffff12}.miawpos .detail-hero,.miawpos .detail-secondary{background:#4b5a1c18}
 /* Clip oversized scene layers without creating a nested scroll container. */
 .hero-stage,.project-slide,.workspace,.contact{overflow:clip}
+/* A manual popover keeps the graphic wipe above the native dialog top layer. */
+.transition[popover]{margin:0;border:0;padding:0;max-width:none;max-height:none;width:100vw;height:100dvh;background:transparent;overflow:clip}
+.transition[popover]:not(:popover-open){display:none}
+.transition::backdrop{background:transparent;pointer-events:none}
+.project-dialog.glasspos{background:#171e18;color:var(--paper)}
+.project-dialog.miawpos{background:var(--acid);color:var(--ink)}
+.project-dialog.portfolio{background:var(--blue);color:var(--paper)}
+.project-dialog .detail-top h2 em{letter-spacing:-.07em}
+html{scroll-behavior:auto}
+/* Section anchors own their header clearance, so previous scenes do not sit behind navigation. */
+html{scroll-padding-top:0}
+.manifesto,.work-intro,.practice,.workspace{padding-top:115px}
+@media(max-width:600px){.manifesto,.work-intro,.practice,.workspace{padding-top:100px}}
+/* Reserve breathing room above the fixed sound control for the final footer links. */
+.contact-shell{padding-bottom:72px}
+@media(max-width:600px){.contact-shell{padding-bottom:70px}}
+.hero-baseline{padding-right:150px}
+@media(max-width:600px){.hero-baseline{padding-right:112px;gap:12px}.hero-baseline>a{white-space:nowrap;font-size:5.5px}}

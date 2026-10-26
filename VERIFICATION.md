@@ -1,25 +1,28 @@
-# Verification — 2026-10-26
+# Verification — cinematic rebuild
 
-## Completed checks
+Checked on 27 October 2026 (Asia/Makassar).
 
-- JavaScript syntax for all browser modules.
-- Unique HTML IDs, existing local assets, valid in-page anchors, four project/media configurations, audio blob policy, and the retained hosting identity.
-- Desktop layout reviewed at the available approximately 1350 × 930 browser viewport; no horizontal document overflow.
-- Responsive layouts reviewed in real iframe viewports nominally 390 × 844 and 320 × 740. With classic scrollbars, document client widths were 375 and 305 pixels; scroll widths matched both client widths after refinement.
-- The SchoolAI route also opened correctly inside the narrow viewport, with matching dialog client/scroll width.
-- SchoolAI → GlassPos project navigation, route title/content updates, Escape/history return, and focus transfer to the close control.
-- Systems filter produced exactly GlassPos and MiawPOS; compact index mode updated both layout and pressed states.
-- Workspace inspection switched from terminal to tools and updated the selected note and camera.
-- Background audio started after an explicit play gesture, showed Playing, responded to a keyboard volume change from 22% to 21%, and paused correctly.
-- Global motion control updated the stored preference and paused state.
-- Design Notes opened with the Lusion and Lando Norris reference mapping.
+## Reproducible checks
 
-## Actual limits
+`node scripts/check.mjs` passes JavaScript syntax, unique HTML IDs, local assets, section anchors, four project routes, all 19 media configuration slots, the local-audio CSP policy, and the retained hosting identity. It also runs the geometry check: 19,968 triangles across eight capped sculpture members, finite attributes, unit normals, and bounded framing coordinates.
 
-The available test browser does not expose a WebGL context. Its 3D reviews exercised the depth-buffered software renderer using the same original meshes. Native GPU shader execution and GPU-specific visual output are not verified in this environment. A GPU-capable browser should be used for that final hardware check.
+## Browser coverage
 
-The radio's playback state, audio context flow, and controls were verified; this is not a claim of an external audio mastering review. No Lighthouse score, real-device performance result, WCAG certification, or award outcome is claimed.
+- Chrome cloud browser, approximately 1363 × 936 desktop viewport.
+- Same-browser responsive frames at 390 × 844 and 320 × 740. Their usable widths are 375 and 305 pixels because of scrollbars. Document scroll widths equal those usable widths.
+- Software 3D rendering visually reviewed: large close framing, assembled/separated forms, and a full-stage scroll composition. Expand/reconnect state and the corrected internal scroll position were checked.
+- Desktop project index moved from SchoolAI to GlassPos. GlassPos opened with its correct title, close-button focus, and route. Escape returned to the previous page. In a second route pass, SchoolAI → next project reached GlassPos, retained close-button focus, and removed its transition mask.
+- The mobile menu reached the identity chapter. SchoolAI opened at the narrow width with no horizontal overflow.
+- Full-screen navigation, workspace tool-note switching, and design notes were checked. The menu has distinct accessible labels for its serif/sans rollover layers.
+- Generative audio Play reported Playing. Volume changed 22% → 21% and was restored. A temporary WAV was selected through the actual file chooser, reported as a local track, and reset. Final sound state is paused.
+- Motion Off switched the desktop project track to a column with no transform. Motion On was restored.
+- A focused control originally caused the clipped hero to scroll internally; structural clipping now uses `overflow: clip`, and `hero-stage.scrollTop` remains 0 after interaction.
+- The fixed audio dock has reserved space above the footer links and beside the opening scroll link.
+- The transition overlay uses the browser top layer so it can cover native project dialogs. It is removed after the route change.
+- Empty image/video slots issue no requests. The screenshot composition contains original code-rendered geometry and intentionally empty planes.
 
-Project images and videos are intentionally unfilled, as requested. Their future assets require a fresh size, crop, loading, and performance review after being added.
+## Limits
 
-The temporary responsive QA harness is excluded from delivery. The source includes a lightweight GitHub Actions integrity check; its remote result is separate from the local checks above.
+The cloud browser reports no WebGL context, so the GPU path has not been executed here. Software rendering is deliberately slower and is not a proxy for native GPU frame-rate testing. Before presenting a performance claim, test the WebGL path on a GPU-enabled desktop and a physical phone.
+
+No Lighthouse score, formal accessibility audit, broad browser certification, or production audio-mastering claim is made. Supplied reference recordings were inspected as time-indexed frame sequences; no source-site assets are copied.

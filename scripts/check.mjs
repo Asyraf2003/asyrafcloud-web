@@ -15,10 +15,14 @@ for(const match of html.matchAll(/href="#([^"/]+)"/g))assert.ok(ids.includes(mat
 const content=await import(join(dist,'content.js'));
 assert.equal(Object.keys(content.projects).length,4,'Four project routes are required');
 assert.deepEqual(Object.keys(content.media),Object.keys(content.projects),'Every project needs a media configuration');
-for(const [key,config]of Object.entries(content.media)){
-  assert.match(config.type,/^(image|video)$/);assert.ok(config.alt,`Missing media description for ${key}`);
+const allMedia={...content.media,...content.mediaSlots};
+const slots=[...html.matchAll(/data-media="([^"]+)"/g)].map(m=>m[1]);
+assert.deepEqual([...new Set(slots)].sort(),Object.keys(allMedia).sort(),'Every designed media slot needs a configuration');
+for(const [key,config]of Object.entries(allMedia)){
+  assert.match(config.type,/^(image|video)$/);if(config.fit)assert.match(config.fit,/^(cover|contain)$/);assert.ok(config.alt,`Missing media description for ${key}`);
   if(config.src){assert.ok(config.src.startsWith('/assets/'),'Bundle media in /assets/');await stat(join(dist,config.src));}
 }
 const headers=await readFile(join(dist,'_headers'),'utf8');assert.ok(headers.includes("media-src 'self' blob:"),'Local audio files need the blob media source');
 const manifest=JSON.parse(await readFile(join(root,'.openai/hosting.json'),'utf8'));assert.equal(manifest.static.directory,'dist');assert.ok(manifest.project_id,'Site identity must be retained');
-console.log('PASS: JavaScript syntax, unique IDs, local assets, anchors, four project/media routes, audio policy, and hosting manifest.');
+await import('./check-geometry.mjs');
+console.log('PASS: JavaScript syntax, unique IDs, local assets, anchors, four project routes, all 19 media slots, audio policy, and hosting manifest.');

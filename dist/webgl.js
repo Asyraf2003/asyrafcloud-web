@@ -63,38 +63,69 @@ class GPU {
 // Software rendering uses the same 3D members, depth test, and smooth normals.
 // A studio-reflection lookup keeps the per-pixel fallback bounded without flat polygon shading.
 class Software {
- constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:true});if(!this.ctx)throw new Error('Canvas unavailable');this.backend='canvas2d';this.materials=new Map();this.ratio=1.25;this.lastSize='';}
+ constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:true});if(!this.ctx)throw new Error('Canvas unavailable');this.backend='canvas2d';this.materials=new Map();this.meshCache=new Map();this.ratio=1.25;this.lastSize='';}
  matcap(material){const key=JSON.stringify(material);if(this.materials.has(key))return this.materials.get(key);const size=256,out=new Uint8Array(size*size*3);const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t);};const l=norm([-.5,1,1]),rimDir=norm([.95,.22,.25]),acidDir=norm([-.5,-.25,.5]);
  for(let y=0;y<size;y++)for(let x=0;x<size;x++){const nx=x/(size-1)*2-1,ny=y/(size-1)*2-1,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)),n=[nx,ny,nz],r=[2*nz*nx,2*nz*ny,2*nz*nz-1];const keyLight=smooth(.15,.23,r[1])*(1-smooth(.66,.75,r[1])),strip=Math.exp(-Math.pow((r[0]+.62)*12,2))*smooth(-.25,.1,r[1]),rim=Math.pow(Math.max(dot(r,rimDir),0),45),acid=Math.pow(Math.max(dot(r,acidDir),0),22),light=Math.max(dot(n,l),0),fresnel=Math.pow(1-nz,5);
  for(let k=0;k<3;k++){const env=mix([.018,.025,.017][k],[.24,.28,.23][k],smooth(-.5,1,r[1]))+keyLight*[1.9,2.05,1.9][k]+strip*[3.5,3.6,3.2][k]+rim*[2.7,2.9,2.5][k]+acid*[.35,.55,.02][k];let color=mix(material.color[k]*(.12+light*.8)+env*.08,env*material.color[k]*(.82+.18*fresnel),material.metal);color=color*(2.51*color+.03)/(color*(2.43*color+.59)+.14);out[(y*size+x)*3+k]=Math.round(Math.pow(clamp(color),.454545)*255);}}
  this.materials.set(key,out);return out;}
  begin(eye,target,fov){const c=this.canvas;const pixelBudget=1200000;let ratio=Math.min(this.ratio,Math.sqrt(pixelBudget/(c.clientWidth*c.clientHeight)));const w=Math.max(1,Math.round(c.clientWidth*ratio)),h=Math.max(1,Math.round(c.clientHeight*ratio));if(c.width!==w||c.height!==h){c.width=w;c.height=h;this.image=this.ctx.createImageData(w,h);this.depth=new Float32Array(w*h);}this.image.data.fill(0);this.depth.fill(Infinity);this.eye=eye;this.vp=projection(eye,target,w/h,fov);this.viewZ=norm(sub(eye,target));this.viewX=norm(cross([0,1,0],this.viewZ));this.viewY=cross(this.viewZ,this.viewX);this.width=w;this.height=h;}
- draw(mesh,model,material){const vp=this.vp,w=this.width,h=this.height,out=this.image.data,depth=this.depth,matcap=this.matcap(material);const vertices=new Float32Array(mesh.length/8*6);for(let i=0,j=0;i<mesh.length;i+=8,j+=6){const p=apply(model,[mesh[i],mesh[i+1],mesh[i+2]]),normal=norm(apply(model,[mesh[i+3],mesh[i+4],mesh[i+5]],0));const qx=vp[0]*p[0]+vp[4]*p[1]+vp[8]*p[2]+vp[12],qy=vp[1]*p[0]+vp[5]*p[1]+vp[9]*p[2]+vp[13],qz=vp[2]*p[0]+vp[6]*p[1]+vp[10]*p[2]+vp[14],qw=vp[3]*p[0]+vp[7]*p[1]+vp[11]*p[2]+vp[15];vertices[j]=(qx/qw*.5+.5)*w;vertices[j+1]=(-qy/qw*.5+.5)*h;vertices[j+2]=qz/qw;vertices[j+3]=dot(normal,this.viewX);vertices[j+4]=dot(normal,this.viewY);vertices[j+5]=dot(normal,this.viewZ);}
- for(let i=0;i<vertices.length;i+=18){const a=vertices.subarray(i,i+6),b=vertices.subarray(i+6,i+12),c=vertices.subarray(i+12,i+18);if((a[5]+b[5]+c[5])<-.1||a[2]>1||b[2]>1||c[2]>1)continue;const den=(b[1]-c[1])*(a[0]-c[0])+(c[0]-b[0])*(a[1]-c[1]);if(Math.abs(den)<.001)continue;const x0=Math.max(0,Math.floor(Math.min(a[0],b[0],c[0]))),x1=Math.min(w-1,Math.ceil(Math.max(a[0],b[0],c[0]))),y0=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1]))),y1=Math.min(h-1,Math.ceil(Math.max(a[1],b[1],c[1])));const inv=1/den,ux=(b[1]-c[1])*inv,vx=(c[1]-a[1])*inv;
- for(let y=y0;y<=y1;y++){let u=((b[1]-c[1])*(x0+.5-c[0])+(c[0]-b[0])*(y+.5-c[1]))*inv,v=((c[1]-a[1])*(x0+.5-c[0])+(a[0]-c[0])*(y+.5-c[1]))*inv;for(let x=x0;x<=x1;x++,u+=ux,v+=vx){const t=1-u-v;if(u<0||v<0||t<0)continue;const z=u*a[2]+v*b[2]+t*c[2],idx=y*w+x;if(z>=depth[idx])continue;let nx=u*a[3]+v*b[3]+t*c[3],ny=u*a[4]+v*b[4]+t*c[4],nz=u*a[5]+v*b[5]+t*c[5];const len=1/(Math.sqrt(nx*nx+ny*ny+nz*nz)||1);nx*=len;ny*=len;const tx=clamp(Math.round((nx*.5+.5)*255),0,255),ty=clamp(Math.round((ny*.5+.5)*255),0,255),m=(ty*256+tx)*3,o=idx*4;out[o]=matcap[m];out[o+1]=matcap[m+1];out[o+2]=matcap[m+2];out[o+3]=255;depth[idx]=z;}}}
+ draw(mesh,model,material){
+ const vp=this.vp,width=this.width,height=this.height,out=this.image.data,depth=this.depth,matcap=this.matcap(material);
+ let cached=this.meshCache.get(mesh);
+ if(!cached){
+  const unique=[],indices=[],lookup=new Map();
+  for(let i=0;i<mesh.length;i+=8){const key=Array.from(mesh.subarray(i,i+6)).join(',');let index=lookup.get(key);if(index===undefined){index=unique.length/6;lookup.set(key,index);for(let j=0;j<6;j++)unique.push(mesh[i+j]);}indices.push(index);}
+  cached={source:new Float32Array(unique),indices:new Uint32Array(indices),vertices:new Float32Array(unique.length)};this.meshCache.set(mesh,cached);
+ }
+ const {source,indices,vertices}=cached,m=model,invScale=1/Math.hypot(m[0],m[1],m[2]),vx=this.viewX,vy=this.viewY,vz=this.viewZ;
+ for(let i=0;i<source.length;i+=6){
+  const x=source[i],y=source[i+1],z=source[i+2],px=m[0]*x+m[4]*y+m[8]*z+m[12],py=m[1]*x+m[5]*y+m[9]*z+m[13],pz=m[2]*x+m[6]*y+m[10]*z+m[14];
+  const nx=(m[0]*source[i+3]+m[4]*source[i+4]+m[8]*source[i+5])*invScale,ny=(m[1]*source[i+3]+m[5]*source[i+4]+m[9]*source[i+5])*invScale,nz=(m[2]*source[i+3]+m[6]*source[i+4]+m[10]*source[i+5])*invScale;
+  const qx=vp[0]*px+vp[4]*py+vp[8]*pz+vp[12],qy=vp[1]*px+vp[5]*py+vp[9]*pz+vp[13],qz=vp[2]*px+vp[6]*py+vp[10]*pz+vp[14],qw=vp[3]*px+vp[7]*py+vp[11]*pz+vp[15];
+  vertices[i]=(qx/qw*.5+.5)*width;vertices[i+1]=(-qy/qw*.5+.5)*height;vertices[i+2]=qz/qw;vertices[i+3]=nx*vx[0]+ny*vx[1]+nz*vx[2];vertices[i+4]=nx*vy[0]+ny*vy[1]+nz*vy[2];vertices[i+5]=nx*vz[0]+ny*vz[1]+nz*vz[2];
+ }
+ for(let i=0;i<indices.length;i+=3){
+  const ai=indices[i]*6,bi=indices[i+1]*6,ci=indices[i+2]*6;
+  const ax=vertices[ai],ay=vertices[ai+1],az=vertices[ai+2],anx=vertices[ai+3],any=vertices[ai+4],anz=vertices[ai+5];
+  const bx=vertices[bi],by=vertices[bi+1],bz=vertices[bi+2],bnx=vertices[bi+3],bny=vertices[bi+4],bnz=vertices[bi+5];
+  const cx=vertices[ci],cy=vertices[ci+1],cz=vertices[ci+2],cnx=vertices[ci+3],cny=vertices[ci+4],cnz=vertices[ci+5];
+  if(anz+bnz+cnz<-.1||az>1||bz>1||cz>1)continue;
+  const den=(by-cy)*(ax-cx)+(cx-bx)*(ay-cy);if(Math.abs(den)<.001)continue;
+  const x0=Math.max(0,Math.floor(Math.min(ax,bx,cx))),x1=Math.min(width-1,Math.ceil(Math.max(ax,bx,cx))),y0=Math.max(0,Math.floor(Math.min(ay,by,cy))),y1=Math.min(height-1,Math.ceil(Math.max(ay,by,cy)));
+  const inv=1/den,ux=(by-cy)*inv,vstep=(cy-ay)*inv;
+  for(let y=y0;y<=y1;y++){
+   let u=((by-cy)*(x0+.5-cx)+(cx-bx)*(y+.5-cy))*inv,v=((cy-ay)*(x0+.5-cx)+(ax-cx)*(y+.5-cy))*inv;
+   for(let x=x0;x<=x1;x++,u+=ux,v+=vstep){
+    const t=1-u-v;if(u<0||v<0||t<0)continue;const z=u*az+v*bz+t*cz,idx=y*width+x;if(z>=depth[idx])continue;
+    let nx=u*anx+v*bnx+t*cnx,ny=u*any+v*bny+t*cny,nz=u*anz+v*bnz+t*cnz;const len=1/(Math.sqrt(nx*nx+ny*ny+nz*nz)||1);nx*=len;ny*=len;
+    const tx=Math.max(0,Math.min(255,Math.round((nx*.5+.5)*255))),ty=Math.max(0,Math.min(255,Math.round((ny*.5+.5)*255))),sample=(ty*256+tx)*3,o=idx*4;
+    out[o]=matcap[sample];out[o+1]=matcap[sample+1];out[o+2]=matcap[sample+2];out[o+3]=255;depth[idx]=z;
+   }
+  }
+ }
  }
  end(){this.ctx.putImageData(this.image,0,0);}
- dispose(){this.materials.clear();}
+ dispose(){this.materials.clear();this.meshCache.clear();}
 }
 const chrome={color:[.83,.89,.79],metal:1,roughness:.12};
 const acid={color:[.57,.83,.022],metal:.68,roughness:.24};
 const ceramic={color:[.64,.69,.59],metal:.22,roughness:.5};
-export function createSculpture(canvas){let renderer;try{renderer=new GPU(canvas);}catch(error){if(error.message!=='WebGL unavailable')throw error;renderer=new Software(canvas);}const software=renderer.backend==='canvas2d';canvas.dataset.renderer=renderer.backend;const meshes=Array.from({length:8},(_,i)=>buildSculptureMesh(i,software?36:48,software?30:40)),smallRing=ring(1.25,.34,software?42:72,software?16:28);let frameID=0,visible=true,paused=matchMedia('(prefers-reduced-motion: reduce)').matches,destroyed=false,lost=false,time=0,last=0,lastDraw=0,progress=0,smoothProgress=0,expanded=false,spread=0,angleX=.45,angleY=-.35,targetX=.45,targetY=-.35,pointer=null,dirty=true;
- const render=(now)=>{frameID=0;if(destroyed||lost||!visible||document.hidden)return;const interval=software?120:16;if(now-lastDraw<interval){frameID=requestAnimationFrame(render);return;}const dt=Math.min((now-last)/1000,.05)||.016;last=now;lastDraw=now;if(!paused)time+=dt;const factor=paused?1:Math.min(1,dt*6);angleX=mix(angleX,targetX,factor);angleY=mix(angleY,targetY,factor);smoothProgress=mix(smoothProgress,progress,factor);spread=mix(spread,expanded?1:0,factor);const p=smoothProgress,expand=spread+p*.65,aspect=canvas.clientWidth/canvas.clientHeight;
+export function createSculpture(canvas){let renderer;try{renderer=new GPU(canvas);}catch(error){if(error.message!=='WebGL unavailable')throw error;renderer=new Software(canvas);}const software=renderer.backend==='canvas2d';canvas.dataset.renderer=renderer.backend;const meshes=Array.from({length:8},(_,i)=>buildSculptureMesh(i,software?36:48,software?30:40)),smallRing=ring(1.25,.34,software?42:72,software?16:28);let frameID=0,visible=true,covered=false,paused=matchMedia('(prefers-reduced-motion: reduce)').matches,destroyed=false,lost=false,time=0,last=0,lastDraw=0,progress=0,smoothProgress=0,expanded=false,spread=0,angleX=.45,angleY=-.35,targetX=.45,targetY=-.35,pointer=null,dirty=true;
+ const render=(now)=>{frameID=0;if(destroyed||lost||!visible||covered||document.hidden)return;const interval=software?160:16;if(now-lastDraw<interval){frameID=requestAnimationFrame(render);return;}const dt=Math.min((now-last)/1000,.05)||.016;last=now;lastDraw=now;if(!paused)time+=dt;const factor=paused?1:Math.min(1,dt*6);angleX=mix(angleX,targetX,factor);angleY=mix(angleY,targetY,factor);smoothProgress=mix(smoothProgress,progress,factor);spread=mix(spread,expanded?1:0,factor);const renderStarted=performance.now();const p=smoothProgress,expand=spread+p*.65,aspect=canvas.clientWidth/canvas.clientHeight;
  const distance=aspect<.9?11.7:8.6,eye=[.3+p*.4,.25+p*.7,distance-p*.9];renderer.begin(eye,[0,0,0],.70);const overall=transform([0,-.05,0],[angleX+Math.sin(time*.12)*.06+p*.35,angleY+time*.055+p*.7,-.2+p*.25]);
  for(let i=0;i<8;i++){const f=frame((i+.5)/8*TAU),direction=norm(f.p),shift=scale(direction,expand*.9);shift[2]+=Math.sin(i*2.2)*expand*.6;const local=transform(shift,[Math.sin(i*1.7)*expand*.2,Math.cos(i*2.1)*expand*.25,Math.sin(i)*expand*.15]);renderer.draw(meshes[i],multiply(overall,local),i===1||i===5?acid:chrome);}
  // Two secondary members extend the depth beyond the frame, not a ring around a logo.
  renderer.draw(smallRing,transform([-4.25-expand*.6,1.2,-2.4],[.8+time*.05,.7,-.2],.78),ceramic);
  renderer.draw(smallRing,transform([4.25+expand*.7,-1.3,-1.6],[1.1,-.55+time*.06,.3],.68),acid);
- renderer.end();dirty=false;if(!paused||Math.abs(angleX-targetX)+Math.abs(angleY-targetY)+Math.abs(spread-(expanded?1:0))>.01)frameID=requestAnimationFrame(render);
+ renderer.end();canvas.dataset.frameMs=String(Math.round(performance.now()-renderStarted));dirty=false;if(!paused||Math.abs(angleX-targetX)+Math.abs(angleY-targetY)+Math.abs(spread-(expanded?1:0))>.01)frameID=requestAnimationFrame(render);
  };
- function request(){dirty=true;if(!frameID&&visible&&!document.hidden&&!destroyed&&!lost){last=performance.now();frameID=requestAnimationFrame(render);}}
+ function request(){dirty=true;if(!frameID&&visible&&!covered&&!document.hidden&&!destroyed&&!lost){last=performance.now();frameID=requestAnimationFrame(render);}}
  const visibility=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)request();else{cancelAnimationFrame(frameID);frameID=0;}},{rootMargin:'80px'});visibility.observe(canvas);
- const resize=new ResizeObserver(request);resize.observe(canvas);
+ const resize=new ResizeObserver(request);resize.observe(canvas);const coverObserver=new MutationObserver(()=>{covered=Boolean(document.querySelector('dialog[open]'));if(covered){cancelAnimationFrame(frameID);frameID=0;}else request();});coverObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
  function onVisibility(){if(document.hidden){cancelAnimationFrame(frameID);frameID=0;}else request();}document.addEventListener('visibilitychange',onVisibility);
  function toggle(){expanded=!expanded;canvas.dispatchEvent(new CustomEvent('sculpture:expand',{detail:{expanded},bubbles:true}));request();return expanded;}
  canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;pointer={x:e.clientX,y:e.clientY,ax:targetX,ay:targetY};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!pointer)return;targetY=pointer.ay+(e.clientX-pointer.x)*.006;targetX=clamp(pointer.ax+(e.clientY-pointer.y)*.004,-1.1,1.3);request();});canvas.addEventListener('pointerup',()=>pointer=null);canvas.addEventListener('pointercancel',()=>pointer=null);
  canvas.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Home'].includes(e.key))return;e.preventDefault();if(e.key===' ')toggle();if(e.key==='ArrowLeft')targetY-=.2;if(e.key==='ArrowRight')targetY+=.2;if(e.key==='ArrowUp')targetX-=.15;if(e.key==='ArrowDown')targetX+=.15;if(e.key==='Home'){targetX=.45;targetY=-.35;expanded=false;canvas.dispatchEvent(new CustomEvent('sculpture:expand',{detail:{expanded},bubbles:true}));}request();});
  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;cancelAnimationFrame(frameID);frameID=0;canvas.dataset.renderState='context-lost';});canvas.addEventListener('webglcontextrestored',()=>{renderer=new GPU(canvas);lost=false;canvas.dataset.renderState='ready';request();});
- canvas.dataset.renderState='ready';request();return{toggle,scroll(value){progress=value;request();},motion(value){paused=value;if(paused){cancelAnimationFrame(frameID);frameID=0;}request();},dispose(){destroyed=true;cancelAnimationFrame(frameID);visibility.disconnect();resize.disconnect();document.removeEventListener('visibilitychange',onVisibility);renderer.dispose();},get backend(){return renderer.backend;}};
+ canvas.dataset.renderState='ready';request();return{toggle,scroll(value){progress=value;request();},motion(value){paused=value;if(paused){cancelAnimationFrame(frameID);frameID=0;}request();},dispose(){destroyed=true;cancelAnimationFrame(frameID);visibility.disconnect();resize.disconnect();coverObserver.disconnect();document.removeEventListener('visibilitychange',onVisibility);renderer.dispose();},get backend(){return renderer.backend;}};
 }
