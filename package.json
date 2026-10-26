@@ -1,9 +1,13 @@
 {
   "name": "asyrafcloud-systems-in-motion",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "An original static portfolio by Asyraf Mubarak.",
-  "scripts": {"check": "node scripts/check.mjs"},
-  "engines": {"node": ">=20.11"}
+  "description": "An independent portfolio of systems and experiments, with cinematic native-WebGL chapters.",
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
 }
